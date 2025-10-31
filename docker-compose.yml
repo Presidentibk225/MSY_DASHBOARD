@@ -1,0 +1,49 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: msy-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./html:/usr/share/nginx/html
+    restart: unless-stopped
+    networks:
+      - msy-network
+
+  api:
+    image: python:3.11-slim
+    container_name: msy-api
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: python msy_dashboard_v2_vps.py
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    restart: unless-stopped
+    networks:
+      - msy-network
+
+  genesy:
+    build:
+      context: .
+      dockerfile: Dockerfile.genesy
+    container_name: msy-genesy
+    working_dir: /app
+    volumes:
+      - .:/app
+      - /msy/G:/msy/G
+      - /msy/D:/msy/D
+      - /msy/I:/msy/I
+    env_file:
+      - .env
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - msy-network
+
+networks:
+  msy-network:
+    driver: bridge
